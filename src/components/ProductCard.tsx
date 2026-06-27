@@ -133,4 +133,31 @@ export default function ProductCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 flex-wrap 
+        <div className="flex items-center gap-1.5 flex-wrap mb-3">
+          {product.freeDelivery && (
+            <span className="text-xs text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+              Free Delivery
+            </span>
+          )}
+          <span className="text-xs text-blue-700 font-bold bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
+            COD
+          </span>
+        </div>
+
+        <button
+          onClick={handleAddToCart}
+          className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-md"
+        >
+          <ShoppingCart size={16} />
+          Add to Cart
+        </button>
+      </div>
+
+      <div className="bg-gradient-to-r from-violet-50 to-pink-50 px-3 py-1.5 border-t border-gray-100">
+        <p className="text-xs text-gray-600 text-center font-medium">
+          🛡️ <span className="text-violet-700 font-bold">Apnikart Assured</span>
+        </p>
+      </div>
+    </div>
+  );
+}
