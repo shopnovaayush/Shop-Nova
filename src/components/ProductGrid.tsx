@@ -5,10 +5,12 @@ export default function ProductGrid({
   products,
   title,
   onAddToCart,
+  onProductClick,
 }: {
   products: Product[];
   title: string;
   onAddToCart: (product: Product) => void;
+  onProductClick?: (product: Product) => void;
 }) {
   if (products.length === 0) {
     return (
@@ -44,11 +46,16 @@ export default function ProductGrid({
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
           {products.map((product) => (
-            <ProductCard
+            <div
               key={product.id}
-              product={product}
-              onAddToCart={onAddToCart}
-            />
+              onClick={() => onProductClick && onProductClick(product)}
+              className="cursor-pointer"
+            >
+              <ProductCard
+                product={product}
+                onAddToCart={onAddToCart}
+              />
+            </div>
           ))}
         </div>
       </div>
