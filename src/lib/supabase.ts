@@ -1,15 +1,34 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 let supabaseInstance: SupabaseClient | null = null;
+let currentUrl: string | null = null;
+let currentKey: string | null = null;
 
 export const initSupabase = (url: string, anonKey: string): SupabaseClient | null => {
   if (!url || !anonKey) {
     console.warn('Supabase URL or Anon Key not provided');
     return null;
   }
+
+  // ✅ Agar same credentials hain to existing instance return karo
+  if (supabaseInstance && currentUrl === url && currentKey === anonKey) {
+    return supabaseInstance;
+  }
   
   try {
-    supabaseInstance = createClient(url, anonKey);
+    // ✅ Singleton pattern with unique storage key
+    supabaseInstance = createClient(url, anonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storageKey: 'shopnova-auth-token', // ✅ Unique storage key
+      },
+    });
+    
+    currentUrl = url;
+    currentKey = anonKey;
+    
     return supabaseInstance;
   } catch (error) {
     console.error('Failed to initialize Supabase:', error);
@@ -23,10 +42,10 @@ export const getSupabase = (): SupabaseClient | null => {
 
 export const testSupabaseConnection = async (url: string, anonKey: string): Promise<boolean> => {
   try {
-    const client = createClient(url, anonKey);
-    // Try a simple query to test connection
-    const { error } = await client.from('_test_connection').select('*').limit(1);
-    // Even if table doesn't exist, connection is successful if we get a proper error
+    const client = createClient(url, anonKey, {
+      auth: { storageKey: 'shopnova-test-token' }
+    });
+    const { error } = await client.from('orders').select('id').limit(1);
     return !error || error.code === 'PGRST116' || error.code === '42P01';
   } catch {
     return false;
@@ -57,7 +76,7 @@ export interface Order {
 export const createOrder = async (order: Order): Promise<{ data: Order | null; error: string | null }> => {
   const supabase = getSupabase();
   if (!supabase) {
-    return { data: null, error: 'Supabase not configured' };
+    return { data: null, error: 'Supabase not configured. Please add credentials in admin panel.' };
   }
   
   try {
@@ -70,6 +89,7 @@ export const createOrder = async (order: Order): Promise<{ data: Order | null; e
     if (error) throw error;
     return { data, error: null };
   } catch (err) {
+    console.error('Create order error:', err);
     return { data: null, error: (err as Error).message };
   }
 };
@@ -92,35 +112,51 @@ export const updateOrderPayment = async (
       })
       .eq('id', orderId);
     
+    if (error) console.error('Update payment error:', error);
     return !error;
-  } catch {
+  } catch (err) {
+    console.error('Update payment exception:', err);
     return false;
   }
 };
 
-// SQL to create orders table in Supabase:
-/*
-CREATE TABLE orders (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_email TEXT NOT NULL,
-  user_phone TEXT NOT NULL,
-  user_name TEXT NOT NULL,
-  address TEXT NOT NULL,
-  items JSONB NOT NULL,
-  total DECIMAL(10,2) NOT NULL,
-  payment_method TEXT NOT NULL,
-  payment_status TEXT DEFAULT 'pending',
-  payment_id TEXT,
-  order_status TEXT DEFAULT 'pending',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+// ✅ NEW: Get all orders (admin ke liye)
+export const getAllOrders = async (): Promise<{ data: Order[] | null; error: string | null }> => {
+  const supabase = getSupabase();
+  if (!supabase) {
+    return { data: null, error: 'Supabase not configured' };
+  }
+  
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: (err as Error).message };
+  }
+};
 
--- Enable RLS
-ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
-
--- Policy for inserting orders (anyone can create)
-CREATE POLICY "Anyone can create orders" ON orders FOR INSERT WITH CHECK (true);
-
--- Policy for reading own orders
-CREATE POLICY "Users can view own orders" ON orders FOR SELECT USING (true);
-*/
+// ✅ NEW: Get orders by user email
+export const getUserOrders = async (email: string): Promise<{ data: Order[] | null; error: string | null }> => {
+  const supabase = getSupabase();
+  if (!supabase) {
+    return { data: null, error: 'Supabase not configured' };
+  }
+  
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('user_email', email)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: (err as Error).message };
+  }
+};
