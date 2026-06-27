@@ -15,6 +15,7 @@ import AdminPanel from "./components/AdminPanel";
 import CheckoutModal from "./components/CheckoutModal";
 import UserLogin from "./components/UserLogin";
 import PromotionalPopup from "./components/PromotionalPopup";
+import ProductDetailModal from "./components/ProductDetailModal";
 import { products, Product } from "./data/products";
 import { useAdminStore } from "./store/adminStore";
 import { initSupabase } from "./lib/supabase";
@@ -28,19 +29,19 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [userLoginOpen, setUserLoginOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [productDetailOpen, setProductDetailOpen] = useState(false);
 
   const { supabase } = useAdminStore();
 
-  // Initialize Supabase on app load if configured
   useEffect(() => {
     if (supabase.url && supabase.anonKey && supabase.connected) {
       initSupabase(supabase.url, supabase.anonKey);
     }
   }, [supabase]);
 
-  // ✅ Body scroll lock only when modal is open
   useEffect(() => {
-    if (cartOpen || checkoutOpen || userLoginOpen) {
+    if (cartOpen || checkoutOpen || userLoginOpen || productDetailOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -48,7 +49,7 @@ export default function App() {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [cartOpen, checkoutOpen, userLoginOpen]);
+  }, [cartOpen, checkoutOpen, userLoginOpen, productDetailOpen]);
 
   const showToast = useCallback((msg: string) => {
     setToastMsg(msg);
@@ -56,22 +57,27 @@ export default function App() {
   }, []);
 
   const addToCart = useCallback(
-    (product: Product) => {
+    (product: Product, quantity: number = 1) => {
       setCart((prev) => {
         const existing = prev.find((i) => i.product.id === product.id);
         if (existing) {
           return prev.map((i) =>
             i.product.id === product.id
-              ? { ...i, quantity: i.quantity + 1 }
+              ? { ...i, quantity: i.quantity + quantity }
               : i
           );
         }
-        return [...prev, { product, quantity: 1 }];
+        return [...prev, { product, quantity }];
       });
       showToast(`${product.name} added to cart!`);
     },
     [showToast]
   );
+
+  const handleProductClick = useCallback((product: Product) => {
+    setSelectedProduct(product);
+    setProductDetailOpen(true);
+  }, []);
 
   const updateQuantity = useCallback((id: number, qty: number) => {
     if (qty <= 0) {
@@ -183,6 +189,7 @@ export default function App() {
           products={isFiltering ? filteredProducts : products}
           title={gridTitle}
           onAddToCart={addToCart}
+          onProductClick={handleProductClick}
         />
       </div>
 
@@ -194,6 +201,7 @@ export default function App() {
             products={trendingProducts}
             title="Trending Now 🔥"
             onAddToCart={addToCart}
+            onProductClick={handleProductClick}
           />
 
           <SupplierCTA />
@@ -202,6 +210,7 @@ export default function App() {
             products={dealProducts}
             title="Best Deals For You 💰"
             onAddToCart={addToCart}
+            onProductClick={handleProductClick}
           />
 
           <AppDownload />
@@ -210,7 +219,6 @@ export default function App() {
 
       <Footer />
 
-      {/* Cart Drawer */}
       <CartDrawer
         isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
@@ -220,7 +228,6 @@ export default function App() {
         onCheckout={handleCheckout}
       />
 
-      {/* Checkout Modal */}
       <CheckoutModal
         isOpen={checkoutOpen}
         onClose={() => setCheckoutOpen(false)}
@@ -228,42 +235,32 @@ export default function App() {
         onSuccess={handleCheckoutSuccess}
       />
 
-      {/* Toast Notification */}
       <Toast
         message={toastMsg}
         isVisible={toastVisible}
         onClose={() => setToastVisible(false)}
       />
 
-      {/* Chatbot */}
       <Chatbot />
-
-      {/* Admin Panel */}
       <AdminPanel />
-
-      {/* User Login */}
       <UserLogin isOpen={userLoginOpen} onClose={() => setUserLoginOpen(false)} />
-
-      {/* Promotional Popup */}
       <PromotionalPopup />
 
-      {/* Floating cart button */}
-      {cartCount > 0 && !cartOpen && !checkoutOpen && (
+      {/* ✅ NEW - Product Detail Modal */}
+      <ProductDetailModal
+        product={selectedProduct}
+        isOpen={productDetailOpen}
+        onClose={() => setProductDetailOpen(false)}
+        onAddToCart={addToCart}
+      />
+
+      {cartCount > 0 && !cartOpen && !checkoutOpen && !productDetailOpen && (
         <button
           onClick={() => setCartOpen(true)}
           className="fixed bottom-6 right-4 md:right-6 z-40 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white w-14 h-14 rounded-full shadow-2xl shadow-violet-500/40 flex items-center justify-center active:scale-95 transition-transform"
-          aria-label="View Cart"
         >
           <div className="relative">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.5}
-              className="w-6 h-6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-6 h-6" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="9" cy="21" r="1" />
               <circle cx="20" cy="21" r="1" />
               <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
