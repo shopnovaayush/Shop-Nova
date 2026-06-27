@@ -91,7 +91,7 @@ export const initiateRazorpayPayment = async (
 
   const options: RazorpayOptions = {
     key: gateway.keyId,
-    amount: orderDetails.amount * 100, // Razorpay expects amount in paise
+    amount: orderDetails.amount * 100,
     currency: 'INR',
     name: 'ShopNova',
     description: orderDetails.description,
@@ -117,7 +117,7 @@ export const initiateRazorpayPayment = async (
   razorpay.open();
 };
 
-// Cashfree payment (Client-side SDK)
+// ✅ FIXED: Cashfree payment with REAL integration
 export const initiateCashfreePayment = async (
   gateway: PaymentGateway,
   orderDetails: {
@@ -130,22 +130,14 @@ export const initiateCashfreePayment = async (
   onSuccess: (paymentId: string) => void,
   onFailure: (error: string) => void
 ): Promise<void> => {
+  // Step 1: Load Cashfree SDK
   const loaded = await loadPaymentScript('cashfree');
-  if (!loaded) {
-    onFailure('Failed to load Cashfree SDK');
+  if (!loaded || !window.Cashfree) {
+    onFailure('Failed to load Cashfree SDK. Please refresh and try again.');
     return;
   }
 
   try {
-    // Note: Cashfree requires server-side order creation for security
-    // Client-side SDK needs payment_session_id from backend
-    // For now, simulating payment flow
-    
-    // In production:
-    // 1. Create order on your server using Cashfree API
-    // 2. Get payment_session_id
-    // 3. Initialize checkout with session ID
-    
     console.log('Cashfree payment initiated:', {
       appId: gateway.keyId,
       amount: orderDetails.amount,
@@ -153,13 +145,79 @@ export const initiateCashfreePayment = async (
       mode: gateway.testMode ? 'TEST' : 'PRODUCTION',
     });
 
-    // Simulate payment success for demo
-    setTimeout(() => {
-      onSuccess(`CF_${orderDetails.orderId}_${Date.now()}`);
-    }, 1500);
+    // Step 2: Clean phone number (10 digits only)
+    const cleanPhone = orderDetails.customerPhone.toString().replace(/\D/g, '').slice(-10);
+
+    // Step 3: Call backend API to create Cashfree order
+    const response = await fetch('/api/create-cashfree-order', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        orderId: orderDetails.orderId,
+        amount: orderDetails.amount,
+        customerName: orderDetails.customerName,
+        customerEmail: orderDetails.customerEmail,
+        customerPhone: cleanPhone,
+        appId: gateway.keyId,
+        secretKey: gateway.keySecret,
+        mode: gateway.testMode ? 'TEST' : 'PRODUCTION',
+      }),
+    });
+
+    const data = await response.json();
+    console.log('Cashfree order creation response:', data);
+
+    // Step 4: Check if order created successfully
+    if (!data.success || !data.payment_session_id) {
+      onFailure(data.error || 'Failed to create payment order');
+      return;
+    }
+
+    // Step 5: Initialize Cashfree SDK
+    const cashfree = window.Cashfree({
+      mode: gateway.testMode ? 'sandbox' : 'production',
+    });
+
+    // Step 6: Open Cashfree payment popup
+    const checkoutOptions = {
+      paymentSessionId: data.payment_session_id,
+      redirectTarget: '_modal',
+    };
+
+    cashfree.checkout(checkoutOptions).then((result: any) => {
+      console.log('Cashfree checkout result:', result);
+
+      // Payment cancelled by user
+      if (result.error) {
+        console.error('Payment error:', result.error);
+        onFailure(result.error.message || 'Payment was cancelled');
+        return;
+      }
+
+      // Payment redirected (page redirect mode)
+      if (result.redirect) {
+        console.log('Payment redirected');
+        return;
+      }
+
+      // Payment successful
+      if (result.paymentDetails) {
+        console.log('Payment successful:', result.paymentDetails);
+        const paymentId = result.paymentDetails.paymentMessage || 
+                         result.paymentDetails.transactionId || 
+                         `CF_${orderDetails.orderId}_${Date.now()}`;
+        onSuccess(paymentId);
+      }
+    }).catch((error: any) => {
+      console.error('Cashfree checkout error:', error);
+      onFailure(error.message || 'Payment failed');
+    });
 
   } catch (error) {
-    onFailure((error as Error).message);
+    console.error('Cashfree payment error:', error);
+    onFailure((error as Error).message || 'Payment processing failed');
   }
 };
 
