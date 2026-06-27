@@ -40,6 +40,7 @@ export default function App() {
     }
   }, [supabase]);
 
+  // Back Button Handler - Professional
   useEffect(() => {
     window.history.pushState({ page: 'home' }, '', window.location.href);
 
