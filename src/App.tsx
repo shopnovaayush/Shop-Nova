@@ -16,6 +16,7 @@ import CheckoutModal from "./components/CheckoutModal";
 import UserLogin from "./components/UserLogin";
 import PromotionalPopup from "./components/PromotionalPopup";
 import ProductDetailModal from "./components/ProductDetailModal";
+import { ShoppingCart } from "lucide-react";
 import { products, Product } from "./data/products";
 import { useAdminStore } from "./store/adminStore";
 import { initSupabase } from "./lib/supabase";
@@ -40,10 +41,8 @@ export default function App() {
     }
   }, [supabase]);
 
-  // Back Button Handler - Professional
   useEffect(() => {
     window.history.pushState({ page: 'home' }, '', window.location.href);
-
     const handleBackButton = () => {
       if (productDetailOpen) {
         setProductDetailOpen(false);
@@ -71,12 +70,8 @@ export default function App() {
         }
       }
     };
-
     window.addEventListener('popstate', handleBackButton);
-
-    return () => {
-      window.removeEventListener('popstate', handleBackButton);
-    };
+    return () => window.removeEventListener('popstate', handleBackButton);
   }, [productDetailOpen, checkoutOpen, cartOpen, userLoginOpen, searchQuery, selectedCategory]);
 
   const showToast = useCallback((msg: string) => {
@@ -84,23 +79,18 @@ export default function App() {
     setToastVisible(true);
   }, []);
 
-  const addToCart = useCallback(
-    (product: Product, quantity: number = 1) => {
-      setCart((prev) => {
-        const existing = prev.find((i) => i.product.id === product.id);
-        if (existing) {
-          return prev.map((i) =>
-            i.product.id === product.id
-              ? { ...i, quantity: i.quantity + quantity }
-              : i
-          );
-        }
-        return [...prev, { product, quantity }];
-      });
-      showToast(`${product.name} added to cart!`);
-    },
-    [showToast]
-  );
+  const addToCart = useCallback((product: Product, quantity: number = 1) => {
+    setCart((prev) => {
+      const existing = prev.find((i) => i.product.id === product.id);
+      if (existing) {
+        return prev.map((i) =>
+          i.product.id === product.id ? { ...i, quantity: i.quantity + quantity } : i
+        );
+      }
+      return [...prev, { product, quantity }];
+    });
+    showToast(`${product.name} added to cart!`);
+  }, [showToast]);
 
   const handleProductClick = useCallback((product: Product) => {
     setSelectedProduct(product);
@@ -111,11 +101,7 @@ export default function App() {
     if (qty <= 0) {
       setCart((prev) => prev.filter((i) => i.product.id !== id));
     } else {
-      setCart((prev) =>
-        prev.map((i) =>
-          i.product.id === id ? { ...i, quantity: qty } : i
-        )
-      );
+      setCart((prev) => prev.map((i) => i.product.id === id ? { ...i, quantity: qty } : i));
     }
   }, []);
 
@@ -123,14 +109,9 @@ export default function App() {
     setCart((prev) => prev.filter((i) => i.product.id !== id));
   }, []);
 
-  const clearCart = useCallback(() => {
-    setCart([]);
-  }, []);
+  const clearCart = useCallback(() => setCart([]), []);
 
-  const cartCount = useMemo(
-    () => cart.reduce((sum, i) => sum + i.quantity, 0),
-    [cart]
-  );
+  const cartCount = useMemo(() => cart.reduce((sum, i) => sum + i.quantity, 0), [cart]);
 
   const handleSearch = useCallback((q: string) => {
     setSearchQuery(q);
@@ -163,9 +144,7 @@ export default function App() {
     let result = products;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
-      );
+      result = result.filter((p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q));
     }
     if (selectedCategory !== "All") {
       result = result.filter((p) => p.category === selectedCategory);
@@ -173,15 +152,8 @@ export default function App() {
     return result;
   }, [searchQuery, selectedCategory]);
 
-  const trendingProducts = useMemo(
-    () => [...products].sort((a, b) => b.reviews - a.reviews).slice(0, 10),
-    []
-  );
-
-  const dealProducts = useMemo(
-    () => [...products].sort((a, b) => b.discount - a.discount).slice(0, 10),
-    []
-  );
+  const trendingProducts = useMemo(() => [...products].sort((a, b) => b.reviews - a.reviews).slice(0, 10), []);
+  const dealProducts = useMemo(() => [...products].sort((a, b) => b.discount - a.discount).slice(0, 10), []);
 
   const isFiltering = searchQuery.trim() !== "" || selectedCategory !== "All";
 
@@ -217,19 +189,9 @@ export default function App() {
       {!isFiltering && (
         <>
           <FeaturesBanner />
-          <ProductGrid
-            products={trendingProducts}
-            title="Trending Now"
-            onAddToCart={addToCart}
-            onProductClick={handleProductClick}
-          />
+          <ProductGrid products={trendingProducts} title="Trending Now" onAddToCart={addToCart} onProductClick={handleProductClick} />
           <SupplierCTA />
-          <ProductGrid
-            products={dealProducts}
-            title="Best Deals For You"
-            onAddToCart={addToCart}
-            onProductClick={handleProductClick}
-          />
+          <ProductGrid products={dealProducts} title="Best Deals For You" onAddToCart={addToCart} onProductClick={handleProductClick} />
           <AppDownload />
         </>
       )}
@@ -252,11 +214,7 @@ export default function App() {
         onSuccess={handleCheckoutSuccess}
       />
 
-      <Toast
-        message={toastMsg}
-        isVisible={toastVisible}
-        onClose={() => setToastVisible(false)}
-      />
+      <Toast message={toastMsg} isVisible={toastVisible} onClose={() => setToastVisible(false)} />
 
       <Chatbot />
       <AdminPanel />
@@ -269,6 +227,22 @@ export default function App() {
         onClose={() => setProductDetailOpen(false)}
         onAddToCart={addToCart}
       />
+
+      {/* ✅ FLOATING CART BUTTON - CHATBOT KE PASS */}
+      {cartCount > 0 && !cartOpen && !checkoutOpen && !productDetailOpen && (
+        <button
+          onClick={() => setCartOpen(true)}
+          className="fixed bottom-24 right-4 md:right-6 z-40 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white w-14 h-14 rounded-full shadow-2xl shadow-violet-500/40 flex items-center justify-center active:scale-95 transition-transform"
+          aria-label="View Cart"
+        >
+          <div className="relative">
+            <ShoppingCart size={24} strokeWidth={2.5} />
+            <span className="absolute -top-3 -right-3 min-w-[22px] h-[22px] px-1 bg-amber-400 text-gray-900 text-xs font-black rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+              {cartCount > 99 ? '99+' : cartCount}
+            </span>
+          </div>
+        </button>
+      )}
     </div>
   );
 }
