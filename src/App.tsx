@@ -40,14 +40,32 @@ export default function App() {
     }
   }, [supabase]);
 
+  // ✅ FIXED: Proper scroll lock with cleanup
   useEffect(() => {
-    if (cartOpen || checkoutOpen || userLoginOpen || productDetailOpen) {
-      document.body.style.overflow = 'hidden';
+    const isModalOpen = cartOpen || checkoutOpen || userLoginOpen || productDetailOpen;
+    
+    if (isModalOpen) {
+      // Save current scroll position
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
     } else {
-      document.body.style.overflow = '';
+      // Restore scroll position
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
     }
+
+    // Cleanup function - important!
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
     };
   }, [cartOpen, checkoutOpen, userLoginOpen, productDetailOpen]);
 
@@ -246,7 +264,6 @@ export default function App() {
       <UserLogin isOpen={userLoginOpen} onClose={() => setUserLoginOpen(false)} />
       <PromotionalPopup />
 
-      {/* ✅ NEW - Product Detail Modal */}
       <ProductDetailModal
         product={selectedProduct}
         isOpen={productDetailOpen}
