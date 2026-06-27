@@ -14,7 +14,8 @@ import {
   Minus,
   Plus,
   Check,
-  Award
+  Award,
+  ArrowLeft
 } from "lucide-react";
 import { Product } from "../data/products";
 
@@ -44,7 +45,6 @@ export default function ProductDetailModal({
     product.image,
   ] : [];
 
-  // ✅ Reset state when modal closes
   useEffect(() => {
     if (!isOpen) {
       setQuantity(1);
@@ -78,28 +78,41 @@ export default function ProductDetailModal({
 
   return (
     <div 
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm overflow-y-auto"
-      onClick={onClose}
+      className="fixed inset-0 z-50 bg-white md:bg-black/60 md:backdrop-blur-sm overflow-y-auto modal-overlay animate-fade-in"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      style={{ WebkitOverflowScrolling: 'touch' }}
     >
       <div 
         className="bg-white w-full max-w-6xl mx-auto md:my-4 md:rounded-2xl shadow-2xl relative min-h-screen md:min-h-0"
         onClick={(e) => e.stopPropagation()}
       >
         
-        {/* Header */}
-        <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between md:rounded-t-2xl">
-          <h2 className="font-bold text-base md:text-lg text-gray-900 truncate flex-1 mr-4">
-            {product.name}
+        {/* Header - Mobile Friendly */}
+        <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-3 py-3 flex items-center justify-between md:rounded-t-2xl shadow-sm">
+          <button 
+            onClick={onClose}
+            className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors -ml-2"
+            aria-label="Back"
+          >
+            <ArrowLeft size={22} className="text-gray-700" />
+          </button>
+          <h2 className="font-bold text-base text-gray-900 truncate flex-1 mx-2 text-center md:text-left">
+            Product Details
           </h2>
-          <div className="flex items-center gap-2">
-            <button className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors">
-              <Share2 size={18} className="text-gray-700" />
+          <div className="flex items-center gap-1">
+            <button className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
+              <Share2 size={20} className="text-gray-700" />
             </button>
-            <button 
-              onClick={onClose}
-              className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+            <button
+              onClick={() => setLiked(!liked)}
+              className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
             >
-              <X size={20} className="text-gray-700" />
+              <Heart
+                size={20}
+                className={liked ? "fill-pink-500 text-pink-500" : "text-gray-400"}
+              />
             </button>
           </div>
         </div>
@@ -110,13 +123,14 @@ export default function ProductDetailModal({
           {/* LEFT - Image Gallery */}
           <div className="p-4 md:p-6">
             <div 
-              className="relative aspect-square bg-gray-100 rounded-2xl overflow-hidden group cursor-zoom-in"
+              className="relative aspect-square bg-gray-100 rounded-2xl overflow-hidden group"
               onClick={() => setZoomImage(true)}
             >
               <img
                 src={productImages[selectedImage]}
                 alt={product.name}
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                draggable={false}
               />
               
               <div className="absolute top-3 left-3 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white text-xs font-black px-3 py-1.5 rounded-lg shadow-lg flex items-center gap-1">
@@ -124,63 +138,55 @@ export default function ProductDetailModal({
                 {product.discount}% OFF
               </div>
 
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setLiked(!liked);
-                }}
-                className="absolute top-3 right-3 w-10 h-10 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-transform"
-              >
-                <Heart
-                  size={20}
-                  className={liked ? "fill-pink-500 text-pink-500" : "text-gray-400"}
-                />
-              </button>
-
               <div className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm">
                 🔍 Tap to zoom
               </div>
 
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  prevImage();
-                }}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110"
-              >
-                <ChevronLeft size={20} className="text-gray-700" />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  nextImage();
-                }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110"
-              >
-                <ChevronRight size={20} className="text-gray-700" />
-              </button>
+              {productImages.length > 1 && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      prevImage();
+                    }}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform"
+                  >
+                    <ChevronLeft size={20} className="text-gray-700" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      nextImage();
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform"
+                  >
+                    <ChevronRight size={20} className="text-gray-700" />
+                  </button>
+                </>
+              )}
             </div>
 
+            {/* Thumbnails */}
             <div className="flex gap-2 mt-4 overflow-x-auto scrollbar-hide">
               {productImages.map((img, index) => (
                 <button
                   key={index}
                   onClick={() => setSelectedImage(index)}
-                  className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
+                  className={`flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 transition-all ${
                     selectedImage === index 
                       ? 'border-violet-600 shadow-md' 
-                      : 'border-gray-200 hover:border-gray-400'
+                      : 'border-gray-200'
                   }`}
                 >
-                  <img src={img} alt={`View ${index + 1}`} className="w-full h-full object-cover" />
+                  <img src={img} alt={`View ${index + 1}`} className="w-full h-full object-cover" draggable={false} />
                 </button>
               ))}
             </div>
           </div>
 
           {/* RIGHT - Details */}
-          <div className="p-4 md:p-6 md:pt-6">
-            <div className="flex items-center gap-2 mb-3">
+          <div className="p-4 md:p-6 pb-32 md:pb-6">
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
               <span className="text-xs text-violet-600 font-bold uppercase tracking-wider bg-violet-50 px-3 py-1 rounded-full">
                 {product.category}
               </span>
@@ -192,11 +198,11 @@ export default function ProductDetailModal({
               )}
             </div>
 
-            <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 leading-tight">
+            <h1 className="text-lg md:text-2xl font-bold text-gray-900 mb-3 leading-tight">
               {product.name}
             </h1>
 
-            <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200">
+            <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200 flex-wrap">
               <div className="flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-2.5 py-1 rounded-lg shadow-sm">
                 <span className="font-bold text-sm">{product.rating.toFixed(1)}</span>
                 <Star size={14} fill="white" className="text-white" />
@@ -225,9 +231,6 @@ export default function ProductDetailModal({
               <p className="text-sm text-emerald-700 font-bold">
                 💰 You Save ₹{savings.toLocaleString()}
               </p>
-              <p className="text-xs text-gray-600 mt-1">
-                Inclusive of all taxes
-              </p>
             </div>
 
             <div className="mb-4">
@@ -236,16 +239,16 @@ export default function ProductDetailModal({
                 <div className="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 transition-colors"
+                    className="w-12 h-12 flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 transition-colors"
                   >
-                    <Minus size={16} />
+                    <Minus size={18} />
                   </button>
-                  <span className="w-12 text-center font-bold text-lg">{quantity}</span>
+                  <span className="w-14 text-center font-bold text-lg">{quantity}</span>
                   <button
                     onClick={() => setQuantity(quantity + 1)}
-                    className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 transition-colors"
+                    className="w-12 h-12 flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 transition-colors"
                   >
-                    <Plus size={16} />
+                    <Plus size={18} />
                   </button>
                 </div>
                 <span className="text-sm text-gray-500">
@@ -254,7 +257,8 @@ export default function ProductDetailModal({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-6">
+            {/* Desktop Buttons */}
+            <div className="hidden md:grid grid-cols-2 gap-3 mb-6">
               <button
                 onClick={handleAddToCart}
                 className="bg-white border-2 border-violet-600 text-violet-600 font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-violet-50 active:scale-95 transition-all"
@@ -264,7 +268,7 @@ export default function ProductDetailModal({
               </button>
               <button
                 onClick={handleBuyNow}
-                className="bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:opacity-95 active:scale-95 transition-all shadow-lg shadow-violet-300"
+                className="bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:opacity-95 active:scale-95 transition-all shadow-lg"
               >
                 <Zap size={18} />
                 Buy Now
@@ -275,80 +279,43 @@ export default function ProductDetailModal({
               <div className="bg-gray-50 p-3 rounded-xl text-center">
                 <Truck className="mx-auto text-emerald-600 mb-1" size={20} />
                 <p className="text-xs font-bold text-gray-700">Free Delivery</p>
-                <p className="text-[10px] text-gray-500">Above ₹199</p>
               </div>
               <div className="bg-gray-50 p-3 rounded-xl text-center">
                 <RotateCcw className="mx-auto text-pink-600 mb-1" size={20} />
                 <p className="text-xs font-bold text-gray-700">Easy Returns</p>
-                <p className="text-[10px] text-gray-500">7 Days</p>
               </div>
               <div className="bg-gray-50 p-3 rounded-xl text-center">
                 <Shield className="mx-auto text-violet-600 mb-1" size={20} />
                 <p className="text-xs font-bold text-gray-700">Secure</p>
-                <p className="text-[10px] text-gray-500">100% Safe</p>
-              </div>
-            </div>
-
-            <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl mb-6">
-              <div className="flex items-start gap-2">
-                <Truck className="text-emerald-600 flex-shrink-0 mt-0.5" size={18} />
-                <div>
-                  <p className="text-sm font-bold text-emerald-900">Free Delivery by Tomorrow</p>
-                  <p className="text-xs text-emerald-700">Order in next 2 hours 30 minutes</p>
-                </div>
               </div>
             </div>
 
             <div className="border-b border-gray-200 mb-4">
               <div className="flex gap-6 overflow-x-auto scrollbar-hide">
-                <button
-                  onClick={() => setActiveTab('description')}
-                  className={`pb-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
-                    activeTab === 'description'
-                      ? 'border-violet-600 text-violet-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Description
-                </button>
-                <button
-                  onClick={() => setActiveTab('reviews')}
-                  className={`pb-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
-                    activeTab === 'reviews'
-                      ? 'border-violet-600 text-violet-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Reviews ({product.reviews.toLocaleString()})
-                </button>
-                <button
-                  onClick={() => setActiveTab('shipping')}
-                  className={`pb-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
-                    activeTab === 'shipping'
-                      ? 'border-violet-600 text-violet-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Shipping
-                </button>
+                {(['description', 'reviews', 'shipping'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`pb-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap capitalize ${
+                      activeTab === tab
+                        ? 'border-violet-600 text-violet-600'
+                        : 'border-transparent text-gray-500'
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
               </div>
             </div>
 
             <div className="text-sm text-gray-700 leading-relaxed">
               {activeTab === 'description' && (
                 <div className="space-y-3">
-                  <p><strong>About this product:</strong></p>
-                  <p>
-                    Experience premium quality with our {product.name}. Made from the finest materials, this product offers exceptional value for money.
-                  </p>
+                  <p>Experience premium quality with our {product.name}. Made from the finest materials.</p>
                   <ul className="space-y-2 mt-3">
                     <li className="flex items-start gap-2">
                       <Check size={16} className="text-emerald-600 flex-shrink-0 mt-0.5" />
                       <span>Premium quality materials</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Check size={16} className="text-emerald-600 flex-shrink-0 mt-0.5" />
-                      <span>Trending design</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <Check size={16} className="text-emerald-600 flex-shrink-0 mt-0.5" />
@@ -359,44 +326,31 @@ export default function ProductDetailModal({
               )}
               
               {activeTab === 'reviews' && (
-                <div className="space-y-3">
-                  <div className="bg-gray-50 p-4 rounded-xl">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="flex items-center gap-1 bg-green-600 text-white text-xs font-bold px-2 py-0.5 rounded">
-                        <span>5</span>
-                        <Star size={10} fill="white" />
-                      </div>
-                      <span className="font-semibold text-gray-900">Excellent product!</span>
+                <div className="bg-gray-50 p-4 rounded-xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-1 bg-green-600 text-white text-xs font-bold px-2 py-0.5 rounded">
+                      <span>5</span>
+                      <Star size={10} fill="white" />
                     </div>
-                    <p className="text-xs text-gray-600 mb-1">Riya S. • Verified Buyer</p>
-                    <p>Loved the quality and quick delivery. Highly recommended!</p>
+                    <span className="font-semibold">Excellent product!</span>
                   </div>
+                  <p>Loved the quality and quick delivery!</p>
                 </div>
               )}
               
               {activeTab === 'shipping' && (
                 <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <Truck className="text-emerald-600 flex-shrink-0 mt-0.5" size={18} />
-                    <div>
-                      <p className="font-bold text-gray-900">Free Standard Delivery</p>
-                      <p className="text-xs text-gray-600">3-5 business days for orders above ₹199</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Shield className="text-violet-600 flex-shrink-0 mt-0.5" size={18} />
-                    <div>
-                      <p className="font-bold text-gray-900">Secure Payments</p>
-                      <p className="text-xs text-gray-600">UPI, Cards, COD available</p>
-                    </div>
-                  </div>
+                  <p><strong>🚚 Free Delivery:</strong> 3-5 days for orders above ₹199</p>
+                  <p><strong>🔄 7-Day Returns:</strong> No questions asked</p>
+                  <p><strong>🛡️ Secure Payment:</strong> UPI, Cards, COD</p>
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        <div className="sticky bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 grid grid-cols-2 gap-2 md:hidden shadow-2xl">
+        {/* Mobile Bottom Buttons */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 grid grid-cols-2 gap-2 md:hidden shadow-2xl z-10">
           <button
             onClick={handleAddToCart}
             className="bg-white border-2 border-violet-600 text-violet-600 font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all text-sm"
@@ -429,6 +383,7 @@ export default function ProductDetailModal({
             src={productImages[selectedImage]}
             alt={product.name}
             className="max-w-full max-h-full object-contain"
+            draggable={false}
           />
         </div>
       )}
