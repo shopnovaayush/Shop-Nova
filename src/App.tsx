@@ -31,7 +31,6 @@ export default function App() {
   const [userLoginOpen, setUserLoginOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [productDetailOpen, setProductDetailOpen] = useState(false);
-  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const { supabase } = useAdminStore();
 
@@ -41,78 +40,34 @@ export default function App() {
     }
   }, [supabase]);
 
-  // Scroll Lock for Modals
-  useEffect(() => {
-    const isModalOpen = cartOpen || checkoutOpen || userLoginOpen || productDetailOpen || showExitConfirm;
-    
-    if (isModalOpen) {
-      const scrollY = window.scrollY;
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = '100%';
-    } else {
-      const scrollY = document.body.style.top;
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY || '0') * -1);
-      }
-    }
-
-    return () => {
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-    };
-  }, [cartOpen, checkoutOpen, userLoginOpen, productDetailOpen, showExitConfirm]);
-
-  // Back Button Handler
   useEffect(() => {
     window.history.pushState({ page: 'home' }, '', window.location.href);
 
-    const handleBackButton = (event: PopStateEvent) => {
+    const handleBackButton = () => {
       if (productDetailOpen) {
-        event.preventDefault();
         setProductDetailOpen(false);
         window.history.pushState({ page: 'home' }, '', window.location.href);
-        return;
-      }
-
-      if (checkoutOpen) {
-        event.preventDefault();
+      } else if (checkoutOpen) {
         setCheckoutOpen(false);
         window.history.pushState({ page: 'home' }, '', window.location.href);
-        return;
-      }
-
-      if (cartOpen) {
-        event.preventDefault();
+      } else if (cartOpen) {
         setCartOpen(false);
         window.history.pushState({ page: 'home' }, '', window.location.href);
-        return;
-      }
-
-      if (userLoginOpen) {
-        event.preventDefault();
+      } else if (userLoginOpen) {
         setUserLoginOpen(false);
         window.history.pushState({ page: 'home' }, '', window.location.href);
-        return;
-      }
-
-      if (searchQuery || selectedCategory !== 'All') {
-        event.preventDefault();
+      } else if (searchQuery || selectedCategory !== 'All') {
         setSearchQuery('');
         setSelectedCategory('All');
         window.scrollTo({ top: 0, behavior: 'smooth' });
         window.history.pushState({ page: 'home' }, '', window.location.href);
-        return;
-      }
-
-      if (!showExitConfirm) {
-        event.preventDefault();
-        setShowExitConfirm(true);
-        window.history.pushState({ page: 'home' }, '', window.location.href);
+      } else {
+        const confirmExit = window.confirm('Are you sure you want to leave Apnikart?');
+        if (confirmExit) {
+          window.history.back();
+        } else {
+          window.history.pushState({ page: 'home' }, '', window.location.href);
+        }
       }
     };
 
@@ -121,7 +76,7 @@ export default function App() {
     return () => {
       window.removeEventListener('popstate', handleBackButton);
     };
-  }, [productDetailOpen, checkoutOpen, cartOpen, userLoginOpen, searchQuery, selectedCategory, showExitConfirm]);
+  }, [productDetailOpen, checkoutOpen, cartOpen, userLoginOpen, searchQuery, selectedCategory]);
 
   const showToast = useCallback((msg: string) => {
     setToastMsg(msg);
@@ -200,34 +155,20 @@ export default function App() {
 
   const handleCheckoutSuccess = useCallback(() => {
     clearCart();
-    showToast("🎉 Order placed successfully!");
+    showToast("Order placed successfully!");
   }, [clearCart, showToast]);
-
-  const handleExitApp = useCallback(() => {
-    window.history.back();
-    setShowExitConfirm(false);
-  }, []);
-
-  const handleStayInApp = useCallback(() => {
-    setShowExitConfirm(false);
-  }, []);
 
   const filteredProducts = useMemo(() => {
     let result = products;
-
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q)
+        (p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
       );
     }
-
     if (selectedCategory !== "All") {
       result = result.filter((p) => p.category === selectedCategory);
     }
-
     return result;
   }, [searchQuery, selectedCategory]);
 
@@ -260,9 +201,7 @@ export default function App() {
       />
 
       {!isFiltering && <HeroBanner />}
-
       <CategoryBar onCategoryClick={handleCategoryClick} />
-
       {!isFiltering && <DealsStrip />}
 
       <div id="products-section">
@@ -329,62 +268,6 @@ export default function App() {
         onClose={() => setProductDetailOpen(false)}
         onAddToCart={addToCart}
       />
-
-      {showExitConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
-            <div className="bg-gradient-to-r from-violet-600 to-fuchsia-500 p-6 text-white text-center">
-              <div className="text-5xl mb-2">👋</div>
-              <h3 className="text-xl font-bold">Leaving Apnikart?</h3>
-              <p className="text-sm text-white/90 mt-1">We hope to see you again!</p>
-            </div>
-            <div className="p-6">
-              <p className="text-gray-700 text-center mb-4">
-                Are you sure you want to exit?
-              </p>
-              {cartCount > 0 && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-center">
-                  <p className="text-sm text-amber-800 font-semibold">
-                    You have {cartCount} items in your cart!
-                  </p>
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={handleStayInApp}
-                  className="bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-transform"
-                >
-                  Stay Here
-                </button>
-                <button
-                  onClick={handleExitApp}
-                  className="bg-gray-100 text-gray-700 font-bold py-3 rounded-xl border-2 border-gray-200 active:scale-95 transition-transform"
-                >
-                  Exit App
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {cartCount > 0 && !cartOpen && !checkoutOpen && !productDetailOpen && (
-        <button
-          onClick={() => setCartOpen(true)}
-          className="fixed bottom-6 right-4 z-40 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center active:scale-95 transition-transform"
-        >
-          <div className="relative">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-6 h-6" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="9" cy="21" r="1" />
-              <circle cx="20" cy="21" r="1" />
-              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-            </svg>
-            <span className="absolute -top-3 -right-3 min-w-[22px] h-[22px] px-1 bg-amber-400 text-gray-900 text-xs font-black rounded-full flex items-center justify-center shadow-lg border-2 border-white">
-              {cartCount > 99 ? '99+' : cartCount}
-            </span>
-          </div>
-        </button>
-      )}
     </div>
   );
 }
