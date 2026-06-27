@@ -32,7 +32,6 @@ export default function App() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [productDetailOpen, setProductDetailOpen] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
-  const [backPressedOnce, setBackPressedOnce] = useState(false);
 
   const { supabase } = useAdminStore();
 
@@ -42,23 +41,19 @@ export default function App() {
     }
   }, [supabase]);
 
-  // ✅ BETTER Scroll Lock - Mobile Friendly
+  // Scroll Lock for Modals
   useEffect(() => {
-    const isModalOpen = cartOpen || checkoutOpen || userLoginOpen || productDetailOpen;
+    const isModalOpen = cartOpen || checkoutOpen || userLoginOpen || productDetailOpen || showExitConfirm;
     
     if (isModalOpen) {
       const scrollY = window.scrollY;
       document.body.style.position = 'fixed';
       document.body.style.top = `-${scrollY}px`;
-      document.body.style.left = '0';
-      document.body.style.right = '0';
       document.body.style.width = '100%';
     } else {
       const scrollY = document.body.style.top;
       document.body.style.position = '';
       document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
       document.body.style.width = '';
       if (scrollY) {
         window.scrollTo(0, parseInt(scrollY || '0') * -1);
@@ -68,19 +63,15 @@ export default function App() {
     return () => {
       document.body.style.position = '';
       document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
       document.body.style.width = '';
     };
-  }, [cartOpen, checkoutOpen, userLoginOpen, productDetailOpen]);
+  }, [cartOpen, checkoutOpen, userLoginOpen, productDetailOpen, showExitConfirm]);
 
-  // ✅ PROFESSIONAL BACK BUTTON HANDLER
+  // Back Button Handler
   useEffect(() => {
-    // Push initial state when app loads
     window.history.pushState({ page: 'home' }, '', window.location.href);
 
     const handleBackButton = (event: PopStateEvent) => {
-      // Priority 1: Close ProductDetail Modal
       if (productDetailOpen) {
         event.preventDefault();
         setProductDetailOpen(false);
@@ -88,7 +79,6 @@ export default function App() {
         return;
       }
 
-      // Priority 2: Close Checkout Modal
       if (checkoutOpen) {
         event.preventDefault();
         setCheckoutOpen(false);
@@ -96,7 +86,6 @@ export default function App() {
         return;
       }
 
-      // Priority 3: Close Cart Drawer
       if (cartOpen) {
         event.preventDefault();
         setCartOpen(false);
@@ -104,7 +93,6 @@ export default function App() {
         return;
       }
 
-      // Priority 4: Close User Login
       if (userLoginOpen) {
         event.preventDefault();
         setUserLoginOpen(false);
@@ -112,7 +100,6 @@ export default function App() {
         return;
       }
 
-      // Priority 5: Clear search/category filter
       if (searchQuery || selectedCategory !== 'All') {
         event.preventDefault();
         setSearchQuery('');
@@ -122,22 +109,11 @@ export default function App() {
         return;
       }
 
-      // Priority 6: Show exit confirmation
-      if (!backPressedOnce) {
+      if (!showExitConfirm) {
         event.preventDefault();
-        setBackPressedOnce(true);
         setShowExitConfirm(true);
         window.history.pushState({ page: 'home' }, '', window.location.href);
-        
-        // Hide confirmation after 3 seconds
-        setTimeout(() => {
-          setBackPressedOnce(false);
-          setShowExitConfirm(false);
-        }, 3000);
-        return;
       }
-
-      // Allow exit if back pressed again within 3 seconds
     };
 
     window.addEventListener('popstate', handleBackButton);
@@ -145,14 +121,7 @@ export default function App() {
     return () => {
       window.removeEventListener('popstate', handleBackButton);
     };
-  }, [productDetailOpen, checkoutOpen, cartOpen, userLoginOpen, searchQuery, selectedCategory, backPressedOnce]);
-
-  // ✅ Push history state when modal opens
-  useEffect(() => {
-    if (productDetailOpen || checkoutOpen || cartOpen || userLoginOpen) {
-      window.history.pushState({ modal: true }, '', window.location.href);
-    }
-  }, [productDetailOpen, checkoutOpen, cartOpen, userLoginOpen]);
+  }, [productDetailOpen, checkoutOpen, cartOpen, userLoginOpen, searchQuery, selectedCategory, showExitConfirm]);
 
   const showToast = useCallback((msg: string) => {
     setToastMsg(msg);
@@ -235,15 +204,12 @@ export default function App() {
   }, [clearCart, showToast]);
 
   const handleExitApp = useCallback(() => {
-    // Try to close the window/tab
-    window.close();
-    // Fallback: navigate to a blank page
-    window.location.href = 'about:blank';
+    window.history.back();
+    setShowExitConfirm(false);
   }, []);
 
   const handleStayInApp = useCallback(() => {
     setShowExitConfirm(false);
-    setBackPressedOnce(false);
   }, []);
 
   const filteredProducts = useMemo(() => {
@@ -311,23 +277,19 @@ export default function App() {
       {!isFiltering && (
         <>
           <FeaturesBanner />
-
           <ProductGrid
             products={trendingProducts}
-            title="Trending Now 🔥"
+            title="Trending Now"
             onAddToCart={addToCart}
             onProductClick={handleProductClick}
           />
-
           <SupplierCTA />
-
           <ProductGrid
             products={dealProducts}
-            title="Best Deals For You 💰"
+            title="Best Deals For You"
             onAddToCart={addToCart}
             onProductClick={handleProductClick}
           />
-
           <AppDownload />
         </>
       )}
@@ -368,43 +330,31 @@ export default function App() {
         onAddToCart={addToCart}
       />
 
-      {/* ✅ PROFESSIONAL EXIT CONFIRMATION DIALOG */}
       {showExitConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl md:rounded-3xl shadow-2xl max-w-md w-full overflow-hidden">
-            {/* Header with gradient */}
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
             <div className="bg-gradient-to-r from-violet-600 to-fuchsia-500 p-6 text-white text-center">
               <div className="text-5xl mb-2">👋</div>
               <h3 className="text-xl font-bold">Leaving Apnikart?</h3>
-              <p className="text-sm text-white/90 mt-1">
-                We hope to see you again soon!
-              </p>
+              <p className="text-sm text-white/90 mt-1">We hope to see you again!</p>
             </div>
-
-            {/* Content */}
             <div className="p-6">
               <p className="text-gray-700 text-center mb-4">
-                Are you sure you want to exit? You have <strong>{cartCount} items</strong> in your cart!
+                Are you sure you want to exit?
               </p>
-
               {cartCount > 0 && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-center">
                   <p className="text-sm text-amber-800 font-semibold">
-                    💝 Complete your order before leaving!
-                  </p>
-                  <p className="text-xs text-amber-700 mt-1">
-                    Your cart will be saved for next visit
+                    You have {cartCount} items in your cart!
                   </p>
                 </div>
               )}
-
-              {/* Action Buttons */}
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={handleStayInApp}
                   className="bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-transform"
                 >
-                  Stay Here ❤️
+                  Stay Here
                 </button>
                 <button
                   onClick={handleExitApp}
@@ -413,11 +363,6 @@ export default function App() {
                   Exit App
                 </button>
               </div>
-
-              {/* Subtle hint */}
-              <p className="text-xs text-gray-400 text-center mt-4">
-                Press back again within 3 seconds to exit
-              </p>
             </div>
           </div>
         </div>
@@ -426,7 +371,7 @@ export default function App() {
       {cartCount > 0 && !cartOpen && !checkoutOpen && !productDetailOpen && (
         <button
           onClick={() => setCartOpen(true)}
-          className="fixed bottom-6 right-4 md:right-6 z-40 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white w-14 h-14 rounded-full shadow-2xl shadow-violet-500/40 flex items-center justify-center active:scale-95 transition-transform"
+          className="fixed bottom-6 right-4 z-40 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center active:scale-95 transition-transform"
         >
           <div className="relative">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-6 h-6" strokeLinecap="round" strokeLinejoin="round">
@@ -434,7 +379,7 @@ export default function App() {
               <circle cx="20" cy="21" r="1" />
               <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
             </svg>
-            <span className="absolute -top-3 -right-3 min-w-[22px] h-[22px] px-1 bg-amber-400 text-gray-900 text-[11px] font-black rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+            <span className="absolute -top-3 -right-3 min-w-[22px] h-[22px] px-1 bg-amber-400 text-gray-900 text-xs font-black rounded-full flex items-center justify-center shadow-lg border-2 border-white">
               {cartCount > 99 ? '99+' : cartCount}
             </span>
           </div>
