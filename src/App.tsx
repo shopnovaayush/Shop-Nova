@@ -38,49 +38,17 @@ export default function App() {
     }
   }, [supabase]);
 
-  // ✅ Prevent body scroll when modals are open
+  // ✅ Body scroll lock only when modal is open
   useEffect(() => {
     if (cartOpen || checkoutOpen || userLoginOpen) {
       document.body.style.overflow = 'hidden';
-      document.body.style.touchAction = 'none';
     } else {
       document.body.style.overflow = '';
-      document.body.style.touchAction = '';
     }
     return () => {
       document.body.style.overflow = '';
-      document.body.style.touchAction = '';
     };
   }, [cartOpen, checkoutOpen, userLoginOpen]);
-
-  // ✅ Prevent zoom on double tap (iOS Safari)
-  useEffect(() => {
-    let lastTouchEnd = 0;
-    const preventDoubleTabZoom = (e: TouchEvent) => {
-      const now = Date.now();
-      if (now - lastTouchEnd <= 300) {
-        e.preventDefault();
-      }
-      lastTouchEnd = now;
-    };
-    document.addEventListener('touchend', preventDoubleTabZoom, { passive: false });
-    return () => {
-      document.removeEventListener('touchend', preventDoubleTabZoom);
-    };
-  }, []);
-
-  // ✅ Prevent pinch zoom
-  useEffect(() => {
-    const preventPinchZoom = (e: TouchEvent) => {
-      if (e.touches.length > 1) {
-        e.preventDefault();
-      }
-    };
-    document.addEventListener('touchmove', preventPinchZoom, { passive: false });
-    return () => {
-      document.removeEventListener('touchmove', preventPinchZoom);
-    };
-  }, []);
 
   const showToast = useCallback((msg: string) => {
     setToastMsg(msg);
@@ -133,14 +101,12 @@ export default function App() {
   const handleSearch = useCallback((q: string) => {
     setSearchQuery(q);
     setSelectedCategory("All");
-    // ✅ Scroll to top on search
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   const handleCategoryClick = useCallback((cat: string) => {
     setSelectedCategory(cat);
     setSearchQuery("");
-    // ✅ Scroll to products on category click
     setTimeout(() => {
       const productsSection = document.getElementById('products-section');
       if (productsSection) {
@@ -197,7 +163,7 @@ export default function App() {
     : "Products For You";
 
   return (
-    <div className="min-h-screen bg-gray-50 w-full max-w-full overflow-x-hidden">
+    <div className="min-h-screen bg-gray-50">
       <Header
         onSearch={handleSearch}
         cartCount={cartCount}
@@ -206,43 +172,41 @@ export default function App() {
         onUserLogin={() => setUserLoginOpen(true)}
       />
 
-      <main className="w-full max-w-full overflow-x-hidden">
-        {!isFiltering && <HeroBanner />}
+      {!isFiltering && <HeroBanner />}
 
-        <CategoryBar onCategoryClick={handleCategoryClick} />
+      <CategoryBar onCategoryClick={handleCategoryClick} />
 
-        {!isFiltering && <DealsStrip />}
+      {!isFiltering && <DealsStrip />}
 
-        <div id="products-section" className="w-full">
+      <div id="products-section">
+        <ProductGrid
+          products={isFiltering ? filteredProducts : products}
+          title={gridTitle}
+          onAddToCart={addToCart}
+        />
+      </div>
+
+      {!isFiltering && (
+        <>
+          <FeaturesBanner />
+
           <ProductGrid
-            products={isFiltering ? filteredProducts : products}
-            title={gridTitle}
+            products={trendingProducts}
+            title="Trending Now 🔥"
             onAddToCart={addToCart}
           />
-        </div>
 
-        {!isFiltering && (
-          <>
-            <FeaturesBanner />
+          <SupplierCTA />
 
-            <ProductGrid
-              products={trendingProducts}
-              title="Trending Now 🔥"
-              onAddToCart={addToCart}
-            />
+          <ProductGrid
+            products={dealProducts}
+            title="Best Deals For You 💰"
+            onAddToCart={addToCart}
+          />
 
-            <SupplierCTA />
-
-            <ProductGrid
-              products={dealProducts}
-              title="Best Deals For You 💰"
-              onAddToCart={addToCart}
-            />
-
-            <AppDownload />
-          </>
-        )}
-      </main>
+          <AppDownload />
+        </>
+      )}
 
       <Footer />
 
@@ -283,13 +247,12 @@ export default function App() {
       {/* Promotional Popup */}
       <PromotionalPopup />
 
-      {/* ✅ Floating Cart Button - Better mobile UX */}
+      {/* Floating cart button */}
       {cartCount > 0 && !cartOpen && !checkoutOpen && (
         <button
           onClick={() => setCartOpen(true)}
-          className="fixed bottom-6 right-4 md:right-6 z-40 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white w-14 h-14 md:w-16 md:h-16 rounded-full shadow-2xl shadow-violet-500/40 flex items-center justify-center active:scale-95 transition-transform"
+          className="fixed bottom-6 right-4 md:right-6 z-40 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white w-14 h-14 rounded-full shadow-2xl shadow-violet-500/40 flex items-center justify-center active:scale-95 transition-transform"
           aria-label="View Cart"
-          style={{ touchAction: 'manipulation' }}
         >
           <div className="relative">
             <svg
@@ -297,7 +260,7 @@ export default function App() {
               fill="none"
               stroke="currentColor"
               strokeWidth={2.5}
-              className="w-6 h-6 md:w-7 md:h-7"
+              className="w-6 h-6"
               strokeLinecap="round"
               strokeLinejoin="round"
             >
