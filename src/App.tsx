@@ -38,6 +38,50 @@ export default function App() {
     }
   }, [supabase]);
 
+  // ✅ Prevent body scroll when modals are open
+  useEffect(() => {
+    if (cartOpen || checkoutOpen || userLoginOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    };
+  }, [cartOpen, checkoutOpen, userLoginOpen]);
+
+  // ✅ Prevent zoom on double tap (iOS Safari)
+  useEffect(() => {
+    let lastTouchEnd = 0;
+    const preventDoubleTabZoom = (e: TouchEvent) => {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+      }
+      lastTouchEnd = now;
+    };
+    document.addEventListener('touchend', preventDoubleTabZoom, { passive: false });
+    return () => {
+      document.removeEventListener('touchend', preventDoubleTabZoom);
+    };
+  }, []);
+
+  // ✅ Prevent pinch zoom
+  useEffect(() => {
+    const preventPinchZoom = (e: TouchEvent) => {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+      }
+    };
+    document.addEventListener('touchmove', preventPinchZoom, { passive: false });
+    return () => {
+      document.removeEventListener('touchmove', preventPinchZoom);
+    };
+  }, []);
+
   const showToast = useCallback((msg: string) => {
     setToastMsg(msg);
     setToastVisible(true);
@@ -89,11 +133,20 @@ export default function App() {
   const handleSearch = useCallback((q: string) => {
     setSearchQuery(q);
     setSelectedCategory("All");
+    // ✅ Scroll to top on search
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   const handleCategoryClick = useCallback((cat: string) => {
     setSelectedCategory(cat);
     setSearchQuery("");
+    // ✅ Scroll to products on category click
+    setTimeout(() => {
+      const productsSection = document.getElementById('products-section');
+      if (productsSection) {
+        productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
   }, []);
 
   const handleCheckout = useCallback(() => {
@@ -144,7 +197,7 @@ export default function App() {
     : "Products For You";
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 w-full max-w-full overflow-x-hidden">
       <Header
         onSearch={handleSearch}
         cartCount={cartCount}
@@ -153,39 +206,43 @@ export default function App() {
         onUserLogin={() => setUserLoginOpen(true)}
       />
 
-      {!isFiltering && <HeroBanner />}
+      <main className="w-full max-w-full overflow-x-hidden">
+        {!isFiltering && <HeroBanner />}
 
-      <CategoryBar onCategoryClick={handleCategoryClick} />
+        <CategoryBar onCategoryClick={handleCategoryClick} />
 
-      {!isFiltering && <DealsStrip />}
+        {!isFiltering && <DealsStrip />}
 
-      <ProductGrid
-        products={isFiltering ? filteredProducts : products}
-        title={gridTitle}
-        onAddToCart={addToCart}
-      />
-
-      {!isFiltering && (
-        <>
-          <FeaturesBanner />
-
+        <div id="products-section" className="w-full">
           <ProductGrid
-            products={trendingProducts}
-            title="Trending Now 🔥"
+            products={isFiltering ? filteredProducts : products}
+            title={gridTitle}
             onAddToCart={addToCart}
           />
+        </div>
 
-          <SupplierCTA />
+        {!isFiltering && (
+          <>
+            <FeaturesBanner />
 
-          <ProductGrid
-            products={dealProducts}
-            title="Best Deals For You 💰"
-            onAddToCart={addToCart}
-          />
+            <ProductGrid
+              products={trendingProducts}
+              title="Trending Now 🔥"
+              onAddToCart={addToCart}
+            />
 
-          <AppDownload />
-        </>
-      )}
+            <SupplierCTA />
+
+            <ProductGrid
+              products={dealProducts}
+              title="Best Deals For You 💰"
+              onAddToCart={addToCart}
+            />
+
+            <AppDownload />
+          </>
+        )}
+      </main>
 
       <Footer />
 
@@ -226,26 +283,30 @@ export default function App() {
       {/* Promotional Popup */}
       <PromotionalPopup />
 
-      {/* Floating cart button */}
+      {/* ✅ Floating Cart Button - Better mobile UX */}
       {cartCount > 0 && !cartOpen && !checkoutOpen && (
         <button
           onClick={() => setCartOpen(true)}
-          className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white w-14 h-14 rounded-full shadow-2xl shadow-violet-500/30 flex items-center justify-center hover:scale-110 transition-transform animate-pulse-glow"
+          className="fixed bottom-6 right-4 md:right-6 z-40 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white w-14 h-14 md:w-16 md:h-16 rounded-full shadow-2xl shadow-violet-500/40 flex items-center justify-center active:scale-95 transition-transform"
+          aria-label="View Cart"
+          style={{ touchAction: 'manipulation' }}
         >
           <div className="relative">
             <svg
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              strokeWidth={2}
-              className="w-6 h-6"
+              strokeWidth={2.5}
+              className="w-6 h-6 md:w-7 md:h-7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
               <circle cx="9" cy="21" r="1" />
               <circle cx="20" cy="21" r="1" />
               <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
             </svg>
-            <span className="absolute -top-2.5 -right-2.5 w-5 h-5 bg-amber-400 text-gray-900 text-[10px] font-bold rounded-full flex items-center justify-center">
-              {cartCount}
+            <span className="absolute -top-3 -right-3 min-w-[22px] h-[22px] px-1 bg-amber-400 text-gray-900 text-[11px] font-black rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+              {cartCount > 99 ? '99+' : cartCount}
             </span>
           </div>
         </button>
