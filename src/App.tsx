@@ -31,6 +31,8 @@ export default function App() {
   const [userLoginOpen, setUserLoginOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [productDetailOpen, setProductDetailOpen] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [backPressedOnce, setBackPressedOnce] = useState(false);
 
   const { supabase } = useAdminStore();
 
@@ -40,34 +42,117 @@ export default function App() {
     }
   }, [supabase]);
 
-  // ✅ FIXED: Proper scroll lock with cleanup
+  // ✅ BETTER Scroll Lock - Mobile Friendly
   useEffect(() => {
     const isModalOpen = cartOpen || checkoutOpen || userLoginOpen || productDetailOpen;
     
     if (isModalOpen) {
-      // Save current scroll position
       const scrollY = window.scrollY;
       document.body.style.position = 'fixed';
       document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
       document.body.style.width = '100%';
     } else {
-      // Restore scroll position
       const scrollY = document.body.style.top;
       document.body.style.position = '';
       document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
       document.body.style.width = '';
       if (scrollY) {
         window.scrollTo(0, parseInt(scrollY || '0') * -1);
       }
     }
 
-    // Cleanup function - important!
     return () => {
       document.body.style.position = '';
       document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
       document.body.style.width = '';
     };
   }, [cartOpen, checkoutOpen, userLoginOpen, productDetailOpen]);
+
+  // ✅ PROFESSIONAL BACK BUTTON HANDLER
+  useEffect(() => {
+    // Push initial state when app loads
+    window.history.pushState({ page: 'home' }, '', window.location.href);
+
+    const handleBackButton = (event: PopStateEvent) => {
+      // Priority 1: Close ProductDetail Modal
+      if (productDetailOpen) {
+        event.preventDefault();
+        setProductDetailOpen(false);
+        window.history.pushState({ page: 'home' }, '', window.location.href);
+        return;
+      }
+
+      // Priority 2: Close Checkout Modal
+      if (checkoutOpen) {
+        event.preventDefault();
+        setCheckoutOpen(false);
+        window.history.pushState({ page: 'home' }, '', window.location.href);
+        return;
+      }
+
+      // Priority 3: Close Cart Drawer
+      if (cartOpen) {
+        event.preventDefault();
+        setCartOpen(false);
+        window.history.pushState({ page: 'home' }, '', window.location.href);
+        return;
+      }
+
+      // Priority 4: Close User Login
+      if (userLoginOpen) {
+        event.preventDefault();
+        setUserLoginOpen(false);
+        window.history.pushState({ page: 'home' }, '', window.location.href);
+        return;
+      }
+
+      // Priority 5: Clear search/category filter
+      if (searchQuery || selectedCategory !== 'All') {
+        event.preventDefault();
+        setSearchQuery('');
+        setSelectedCategory('All');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.history.pushState({ page: 'home' }, '', window.location.href);
+        return;
+      }
+
+      // Priority 6: Show exit confirmation
+      if (!backPressedOnce) {
+        event.preventDefault();
+        setBackPressedOnce(true);
+        setShowExitConfirm(true);
+        window.history.pushState({ page: 'home' }, '', window.location.href);
+        
+        // Hide confirmation after 3 seconds
+        setTimeout(() => {
+          setBackPressedOnce(false);
+          setShowExitConfirm(false);
+        }, 3000);
+        return;
+      }
+
+      // Allow exit if back pressed again within 3 seconds
+    };
+
+    window.addEventListener('popstate', handleBackButton);
+
+    return () => {
+      window.removeEventListener('popstate', handleBackButton);
+    };
+  }, [productDetailOpen, checkoutOpen, cartOpen, userLoginOpen, searchQuery, selectedCategory, backPressedOnce]);
+
+  // ✅ Push history state when modal opens
+  useEffect(() => {
+    if (productDetailOpen || checkoutOpen || cartOpen || userLoginOpen) {
+      window.history.pushState({ modal: true }, '', window.location.href);
+    }
+  }, [productDetailOpen, checkoutOpen, cartOpen, userLoginOpen]);
 
   const showToast = useCallback((msg: string) => {
     setToastMsg(msg);
@@ -148,6 +233,18 @@ export default function App() {
     clearCart();
     showToast("🎉 Order placed successfully!");
   }, [clearCart, showToast]);
+
+  const handleExitApp = useCallback(() => {
+    // Try to close the window/tab
+    window.close();
+    // Fallback: navigate to a blank page
+    window.location.href = 'about:blank';
+  }, []);
+
+  const handleStayInApp = useCallback(() => {
+    setShowExitConfirm(false);
+    setBackPressedOnce(false);
+  }, []);
 
   const filteredProducts = useMemo(() => {
     let result = products;
@@ -270,6 +367,61 @@ export default function App() {
         onClose={() => setProductDetailOpen(false)}
         onAddToCart={addToCart}
       />
+
+      {/* ✅ PROFESSIONAL EXIT CONFIRMATION DIALOG */}
+      {showExitConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl md:rounded-3xl shadow-2xl max-w-md w-full overflow-hidden">
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-r from-violet-600 to-fuchsia-500 p-6 text-white text-center">
+              <div className="text-5xl mb-2">👋</div>
+              <h3 className="text-xl font-bold">Leaving Apnikart?</h3>
+              <p className="text-sm text-white/90 mt-1">
+                We hope to see you again soon!
+              </p>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <p className="text-gray-700 text-center mb-4">
+                Are you sure you want to exit? You have <strong>{cartCount} items</strong> in your cart!
+              </p>
+
+              {cartCount > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-center">
+                  <p className="text-sm text-amber-800 font-semibold">
+                    💝 Complete your order before leaving!
+                  </p>
+                  <p className="text-xs text-amber-700 mt-1">
+                    Your cart will be saved for next visit
+                  </p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={handleStayInApp}
+                  className="bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-transform"
+                >
+                  Stay Here ❤️
+                </button>
+                <button
+                  onClick={handleExitApp}
+                  className="bg-gray-100 text-gray-700 font-bold py-3 rounded-xl border-2 border-gray-200 active:scale-95 transition-transform"
+                >
+                  Exit App
+                </button>
+              </div>
+
+              {/* Subtle hint */}
+              <p className="text-xs text-gray-400 text-center mt-4">
+                Press back again within 3 seconds to exit
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {cartCount > 0 && !cartOpen && !checkoutOpen && !productDetailOpen && (
         <button
