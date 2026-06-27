@@ -14,9 +14,7 @@ import {
   Minus,
   Plus,
   Check,
-  MessageCircle,
-  Award,
-  TrendingUp
+  Award
 } from "lucide-react";
 import { Product } from "../data/products";
 
@@ -39,7 +37,6 @@ export default function ProductDetailModal({
   const [zoomImage, setZoomImage] = useState(false);
   const [activeTab, setActiveTab] = useState<'description' | 'reviews' | 'shipping'>('description');
 
-  // Multiple images for gallery (using same image for demo - replace with actual product images)
   const productImages = product ? [
     product.image,
     product.image,
@@ -47,18 +44,14 @@ export default function ProductDetailModal({
     product.image,
   ] : [];
 
+  // ✅ Reset state when modal closes
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
+    if (!isOpen) {
       setQuantity(1);
       setSelectedImage(0);
       setZoomImage(false);
+      setActiveTab('description');
     }
-    return () => {
-      document.body.style.overflow = '';
-    };
   }, [isOpen]);
 
   if (!isOpen || !product) return null;
@@ -84,11 +77,17 @@ export default function ProductDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center overflow-y-auto">
-      <div className="bg-white w-full max-w-6xl my-0 md:my-4 md:rounded-2xl shadow-2xl relative min-h-screen md:min-h-0">
+    <div 
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm overflow-y-auto"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white w-full max-w-6xl mx-auto md:my-4 md:rounded-2xl shadow-2xl relative min-h-screen md:min-h-0"
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Header */}
-        <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between rounded-t-2xl">
+        <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between md:rounded-t-2xl">
           <h2 className="font-bold text-base md:text-lg text-gray-900 truncate flex-1 mr-4">
             {product.name}
           </h2>
@@ -108,9 +107,8 @@ export default function ProductDetailModal({
         {/* Content */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-6">
           
-          {/* LEFT SIDE - Image Gallery */}
-          <div className="p-4 md:p-6 md:sticky md:top-16 md:self-start">
-            {/* Main Image */}
+          {/* LEFT - Image Gallery */}
+          <div className="p-4 md:p-6">
             <div 
               className="relative aspect-square bg-gray-100 rounded-2xl overflow-hidden group cursor-zoom-in"
               onClick={() => setZoomImage(true)}
@@ -121,13 +119,11 @@ export default function ProductDetailModal({
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
               
-              {/* Discount Badge */}
               <div className="absolute top-3 left-3 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white text-xs font-black px-3 py-1.5 rounded-lg shadow-lg flex items-center gap-1">
                 <Zap size={12} />
                 {product.discount}% OFF
               </div>
 
-              {/* Wishlist Button */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -141,12 +137,10 @@ export default function ProductDetailModal({
                 />
               </button>
 
-              {/* Zoom Hint */}
               <div className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm">
                 🔍 Tap to zoom
               </div>
 
-              {/* Navigation Arrows */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -167,7 +161,6 @@ export default function ProductDetailModal({
               </button>
             </div>
 
-            {/* Thumbnail Gallery */}
             <div className="flex gap-2 mt-4 overflow-x-auto scrollbar-hide">
               {productImages.map((img, index) => (
                 <button
@@ -185,9 +178,8 @@ export default function ProductDetailModal({
             </div>
           </div>
 
-          {/* RIGHT SIDE - Product Details */}
+          {/* RIGHT - Details */}
           <div className="p-4 md:p-6 md:pt-6">
-            {/* Category */}
             <div className="flex items-center gap-2 mb-3">
               <span className="text-xs text-violet-600 font-bold uppercase tracking-wider bg-violet-50 px-3 py-1 rounded-full">
                 {product.category}
@@ -200,12 +192,10 @@ export default function ProductDetailModal({
               )}
             </div>
 
-            {/* Product Name */}
             <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 leading-tight">
               {product.name}
             </h1>
 
-            {/* Rating */}
             <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200">
               <div className="flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-2.5 py-1 rounded-lg shadow-sm">
                 <span className="font-bold text-sm">{product.rating.toFixed(1)}</span>
@@ -220,9 +210,8 @@ export default function ProductDetailModal({
               </span>
             </div>
 
-            {/* Price Section */}
             <div className="bg-gradient-to-br from-violet-50 to-pink-50 p-4 rounded-2xl mb-4 border border-violet-100">
-              <div className="flex items-baseline gap-3 mb-2">
+              <div className="flex items-baseline gap-3 mb-2 flex-wrap">
                 <span className="text-3xl md:text-4xl font-black text-gray-900">
                   ₹{product.price.toLocaleString()}
                 </span>
@@ -241,10 +230,9 @@ export default function ProductDetailModal({
               </p>
             </div>
 
-            {/* Quantity Selector */}
             <div className="mb-4">
               <p className="text-sm font-semibold text-gray-700 mb-2">Quantity:</p>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -266,7 +254,6 @@ export default function ProductDetailModal({
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="grid grid-cols-2 gap-3 mb-6">
               <button
                 onClick={handleAddToCart}
@@ -284,7 +271,6 @@ export default function ProductDetailModal({
               </button>
             </div>
 
-            {/* Trust Badges */}
             <div className="grid grid-cols-3 gap-2 mb-6">
               <div className="bg-gray-50 p-3 rounded-xl text-center">
                 <Truck className="mx-auto text-emerald-600 mb-1" size={20} />
@@ -303,7 +289,6 @@ export default function ProductDetailModal({
               </div>
             </div>
 
-            {/* Delivery Info */}
             <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl mb-6">
               <div className="flex items-start gap-2">
                 <Truck className="text-emerald-600 flex-shrink-0 mt-0.5" size={18} />
@@ -314,12 +299,11 @@ export default function ProductDetailModal({
               </div>
             </div>
 
-            {/* Tabs */}
             <div className="border-b border-gray-200 mb-4">
-              <div className="flex gap-6">
+              <div className="flex gap-6 overflow-x-auto scrollbar-hide">
                 <button
                   onClick={() => setActiveTab('description')}
-                  className={`pb-3 text-sm font-bold border-b-2 transition-colors ${
+                  className={`pb-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
                     activeTab === 'description'
                       ? 'border-violet-600 text-violet-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -329,7 +313,7 @@ export default function ProductDetailModal({
                 </button>
                 <button
                   onClick={() => setActiveTab('reviews')}
-                  className={`pb-3 text-sm font-bold border-b-2 transition-colors ${
+                  className={`pb-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
                     activeTab === 'reviews'
                       ? 'border-violet-600 text-violet-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -339,7 +323,7 @@ export default function ProductDetailModal({
                 </button>
                 <button
                   onClick={() => setActiveTab('shipping')}
-                  className={`pb-3 text-sm font-bold border-b-2 transition-colors ${
+                  className={`pb-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
                     activeTab === 'shipping'
                       ? 'border-violet-600 text-violet-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -350,15 +334,12 @@ export default function ProductDetailModal({
               </div>
             </div>
 
-            {/* Tab Content */}
             <div className="text-sm text-gray-700 leading-relaxed">
               {activeTab === 'description' && (
                 <div className="space-y-3">
+                  <p><strong>About this product:</strong></p>
                   <p>
-                    <strong>About this product:</strong>
-                  </p>
-                  <p>
-                    Experience premium quality with our {product.name}. Made from the finest materials, this product offers exceptional value for money. Perfect for everyday use with a stylish design that complements any occasion.
+                    Experience premium quality with our {product.name}. Made from the finest materials, this product offers exceptional value for money.
                   </p>
                   <ul className="space-y-2 mt-3">
                     <li className="flex items-start gap-2">
@@ -371,15 +352,7 @@ export default function ProductDetailModal({
                     </li>
                     <li className="flex items-start gap-2">
                       <Check size={16} className="text-emerald-600 flex-shrink-0 mt-0.5" />
-                      <span>Comfortable and durable</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Check size={16} className="text-emerald-600 flex-shrink-0 mt-0.5" />
-                      <span>Best in class quality</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Check size={16} className="text-emerald-600 flex-shrink-0 mt-0.5" />
-                      <span>Apnikart Assured Product</span>
+                      <span>Apnikart Assured</span>
                     </li>
                   </ul>
                 </div>
@@ -398,17 +371,6 @@ export default function ProductDetailModal({
                     <p className="text-xs text-gray-600 mb-1">Riya S. • Verified Buyer</p>
                     <p>Loved the quality and quick delivery. Highly recommended!</p>
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-xl">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="flex items-center gap-1 bg-green-600 text-white text-xs font-bold px-2 py-0.5 rounded">
-                        <span>4</span>
-                        <Star size={10} fill="white" />
-                      </div>
-                      <span className="font-semibold text-gray-900">Good value for money</span>
-                    </div>
-                    <p className="text-xs text-gray-600 mb-1">Amit K. • Verified Buyer</p>
-                    <p>Product is good for the price. Worth buying!</p>
-                  </div>
                 </div>
               )}
               
@@ -419,20 +381,6 @@ export default function ProductDetailModal({
                     <div>
                       <p className="font-bold text-gray-900">Free Standard Delivery</p>
                       <p className="text-xs text-gray-600">3-5 business days for orders above ₹199</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Zap className="text-amber-600 flex-shrink-0 mt-0.5" size={18} />
-                    <div>
-                      <p className="font-bold text-gray-900">Express Delivery</p>
-                      <p className="text-xs text-gray-600">1-2 business days (₹49 extra)</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <RotateCcw className="text-pink-600 flex-shrink-0 mt-0.5" size={18} />
-                    <div>
-                      <p className="font-bold text-gray-900">7-Day Easy Returns</p>
-                      <p className="text-xs text-gray-600">No questions asked return policy</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -448,7 +396,6 @@ export default function ProductDetailModal({
           </div>
         </div>
 
-        {/* Bottom Sticky Action Bar (Mobile) */}
         <div className="sticky bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 grid grid-cols-2 gap-2 md:hidden shadow-2xl">
           <button
             onClick={handleAddToCart}
@@ -467,7 +414,6 @@ export default function ProductDetailModal({
         </div>
       </div>
 
-      {/* Zoom Image Modal */}
       {zoomImage && (
         <div 
           className="fixed inset-0 z-[60] bg-black/95 flex items-center justify-center p-4"
