@@ -2,7 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    
+    <!-- ✅ FIXED VIEWPORT - No zoom, no horizontal scroll -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     
     <!-- Primary Meta Tags -->
     <title>Apnikart - India's Trusted Online Shopping | Fashion, Electronics, Home & Beauty</title>
@@ -11,8 +13,6 @@
     <meta name="keywords" content="apnikart, online shopping india, fashion online, buy electronics online, home decor, beauty products, affordable shopping, free delivery, COD shopping, indian ecommerce, online store india, best deals, discount shopping, women fashion, men fashion, kids wear, jewellery online" />
     <meta name="author" content="Apnikart" />
     <meta name="robots" content="index, follow" />
-    <meta name="language" content="English" />
-    <meta name="revisit-after" content="7 days" />
     
     <!-- Theme Color -->
     <meta name="theme-color" content="#7c3aed" />
@@ -20,6 +20,11 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Apnikart" />
+    
+    <!-- Mobile Touch Optimization -->
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="HandheldFriendly" content="true" />
+    <meta name="MobileOptimized" content="320" />
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
@@ -50,13 +55,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://sdk.cashfree.com" />
     
-    <!-- Google Fonts - Plus Jakarta Sans (Modern & Professional) -->
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     
     <!-- Cashfree Payment Gateway SDK -->
     <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
     
-    <!-- Structured Data for SEO (Schema.org) -->
+    <!-- Structured Data for SEO -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -91,6 +96,41 @@
     <!-- Performance Optimization -->
     <link rel="dns-prefetch" href="https://api.cashfree.com" />
     <link rel="dns-prefetch" href="https://sandbox.cashfree.com" />
+    
+    <!-- Critical CSS for Mobile Fix -->
+    <style>
+      * {
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+      }
+      html, body {
+        overflow-x: hidden;
+        overscroll-behavior: none;
+        -webkit-overflow-scrolling: touch;
+        touch-action: manipulation;
+        max-width: 100vw;
+      }
+      body {
+        position: relative;
+        width: 100%;
+      }
+      #root {
+        overflow-x: hidden;
+        max-width: 100vw;
+      }
+      img {
+        max-width: 100%;
+        height: auto;
+        -webkit-user-drag: none;
+      }
+      button {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+      }
+      input, textarea, select {
+        font-size: 16px !important;
+      }
+    </style>
     
   </head>
   <body>
