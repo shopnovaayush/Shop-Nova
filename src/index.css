@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
-/* ===== GLOBAL RESET ===== */
+/* ===== BASIC RESET ===== */
 * {
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
 }
 
 html {
   scroll-behavior: smooth;
-  overflow-x: hidden;
-  width: 100%;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -17,14 +17,12 @@ body {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
-  width: 100%;
-  max-width: 100vw;
+  -webkit-overflow-scrolling: touch;
 }
 
-#root {
-  width: 100%;
-  max-width: 100vw;
+/* ===== PREVENT HORIZONTAL SCROLL ONLY ===== */
+html, body, #root {
+  max-width: 100%;
   overflow-x: hidden;
 }
 
@@ -32,13 +30,28 @@ body {
 img {
   max-width: 100%;
   height: auto;
+  display: block;
 }
 
-/* ===== INPUT FIX FOR iOS ===== */
+/* ===== INPUT FIX FOR iOS (Prevents zoom) ===== */
 input,
 textarea,
 select {
   font-size: 16px;
+}
+
+/* ===== BUTTONS - SMOOTH TOUCH ===== */
+button,
+a,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+button:active,
+a:active {
+  opacity: 0.8;
 }
 
 /* ===== SCROLLBAR HIDE UTILITY ===== */
@@ -91,4 +104,22 @@ select {
 
 .animate-progress {
   animation: progress 5s linear;
+}
+
+/* ===== MOBILE OPTIMIZATIONS ===== */
+@media (max-width: 768px) {
+  /* Smooth scrolling on mobile */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Better tap targets */
+  button, a {
+    min-height: 44px;
+  }
+  
+  /* Touch friendly */
+  body {
+    -webkit-overflow-scrolling: touch;
+  }
 }
